@@ -64,6 +64,7 @@ fn get_header_text(res: &Response, skip_headers: &[String]) -> anyhow::Result<St
     writeln!(&mut output)?;
     Ok(output)
 }
+
 impl RequestProfile {
     pub async fn send(&self, args: &ExtraArgs) -> anyhow::Result<ResponseExt> {
         let (headers, query, body) = self.generate(args)?;
@@ -77,6 +78,26 @@ impl RequestProfile {
         let res = client.execute(req).await?;
 
         Ok(ResponseExt(res))
+    }
+
+    pub(crate) fn validate(&self) -> anyhow::Result<()> {
+        if let Some(params) = self.params.as_ref() {
+            if !params.is_object() {
+                return Err(anyhow::anyhow!(
+                    "Params must be an object but got\n{}",
+                    serde_yaml::to_string(params)?
+                ));
+            }
+        }
+        if let Some(body) = self.body.as_ref() {
+            if !body.is_object() {
+                return Err(anyhow::anyhow!(
+                    "Body must be an object but got\n{}",
+                    serde_yaml::to_string(body)?
+                ));
+            }
+        }
+        Ok(())
     }
 
     pub fn generate(
