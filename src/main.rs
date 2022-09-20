@@ -1,7 +1,8 @@
 use clap::Parser;
+use dialoguer::{theme::ColorfulTheme, Input, MultiSelect};
 use rs_xdiff::{
     cli::{Action, Args, RunArgs},
-    DiffConfig,
+    DiffConfig, DiffProfile, ExtraArgs, RequestProfile, ResponseProfile,
 };
 use std::io::Write;
 
@@ -10,7 +11,7 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     match args.action {
         Action::Run(args) => run(args).await?,
-        Action::Parse => parse()?,
+        Action::Parse => parse().await?,
         _ => panic!("Not implemented"),
     }
 
@@ -36,7 +37,34 @@ async fn run(args: RunArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn parse() -> anyhow::Result<()> {
-    println!("Parse not implements");
+async fn parse() -> anyhow::Result<()> {
+    let default = ColorfulTheme::default();
+    let url1: String = Input::with_theme(&default)
+        .with_prompt("Url1")
+        .interact_text()?;
+    let url2: String = Input::with_theme(&default)
+        .with_prompt("Url2")
+        .interact_text()?;
+
+    let req1: RequestProfile = url1.parse()?;
+    let req2: RequestProfile = url2.parse()?;
+
+    let name: String = Input::with_theme(&default)
+        .with_prompt("Profile")
+        .interact_text()?;
+    let resp = req1.send(&ExtraArgs::default()).await?;
+    let headers = resp.get_header_keys();
+    let chosen = MultiSelect::with_theme(&default)
+        .with_prompt("Select headers to skip")
+        .items(&headers)
+        .interact()?;
+    let skip_headers = chosen.iter().map(|i| headers[*i].to_string()).collect();
+    let resp = ResponseProfile::new(skip_headers, vec![]);
+    let profile = DiffProfile::new(req1, req2, resp);
+    let config = DiffConfig::new(vec![(name, profile)].into_iter().collect());
+    let result = serde_yaml::to_string(&config)?;
+    let stdout = std::io::stdout();
+    let mut stdout = stdout.lock();
+    write!(stdout, "---\n{}", result)?;
     Ok(())
 }
