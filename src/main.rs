@@ -10,6 +10,7 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     match args.action {
         Action::Run(args) => run(args).await?,
+        Action::Parse => parse()?,
         _ => panic!("Not implemented"),
     }
 
@@ -32,5 +33,10 @@ async fn run(args: RunArgs) -> anyhow::Result<()> {
     let mut stdout = stdout.lock();
     write!(stdout, "{}", output)?;
 
+    Ok(())
+}
+
+fn parse() -> anyhow::Result<()> {
+    println!("Parse not implements");
     Ok(())
 }
