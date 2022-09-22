@@ -1,5 +1,10 @@
 use std::fmt::{self, Write};
 
+use syntect::easy::HighlightLines;
+use syntect::highlighting::ThemeSet;
+use syntect::parsing::SyntaxSet;
+use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
+
 use console::{style, Style};
 use similar::{ChangeTag, TextDiff};
 struct Line(Option<usize>);
@@ -42,10 +47,26 @@ pub fn diff_text(text1: &str, text2: &str) -> anyhow::Result<String> {
                     }
                 }
                 if change.missing_newline() {
-                    write!(&mut output, "\n")?;
+                    writeln!(&mut output)?;
                 }
             }
         }
     }
+    Ok(output)
+}
+
+pub fn highlight_text(text: &str, extension: &str) -> anyhow::Result<String> {
+    let ps = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
+
+    let syntax = ps.find_syntax_by_extension(extension).unwrap();
+    let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
+    let mut output = String::new();
+    for line in LinesWithEndings::from(text) {
+        let ranges = h.highlight_line(line, &ps).unwrap();
+        let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
+        write!(&mut output, "{}", escaped)?;
+    }
+
     Ok(output)
 }

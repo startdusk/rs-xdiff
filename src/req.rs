@@ -144,8 +144,8 @@ impl RequestProfile {
         args: &ExtraArgs,
     ) -> anyhow::Result<(HeaderMap, serde_json::Value, String)> {
         let mut headers = self.headers.clone();
-        let mut query = self.params.clone().unwrap_or(json!({}));
-        let mut body = self.body.clone().unwrap_or(json!({}));
+        let mut query = self.params.clone().unwrap_or_else(|| json!({}));
+        let mut body = self.body.clone().unwrap_or_else(|| json!({}));
 
         for (k, v) in &args.headers {
             headers.insert(HeaderName::from_str(k)?, HeaderValue::from_str(v)?);
@@ -184,7 +184,7 @@ impl RequestProfile {
 fn get_content_type(headers: &HeaderMap) -> Option<String> {
     headers
         .get(header::CONTENT_TYPE)
-        .and_then(|v| v.to_str().unwrap().split(";").next().map(|v| v.to_string()))
+        .and_then(|v| v.to_str().unwrap().split(';').next().map(|v| v.to_string()))
 }
 
 fn filter_json(text: &str, skip: &[String]) -> anyhow::Result<String> {

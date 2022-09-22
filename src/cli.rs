@@ -65,7 +65,7 @@ fn parse_key_val(s: &str) -> anyhow::Result<KeyVal> {
     let (key_type, key) = match key.chars().next() {
         Some('%') => (KeyValType::Header, &key[1..]),
         Some('@') => (KeyValType::Body, &key[1..]),
-        Some(v) if v.is_ascii_alphabetic() => (KeyValType::Query, &key[..]),
+        Some(v) if v.is_ascii_alphabetic() => (KeyValType::Query, key),
         _ => return Err(anyhow::anyhow!("Invalid key value pair")),
     };
 
