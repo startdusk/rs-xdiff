@@ -6,8 +6,8 @@ use anyhow::Ok;
 use dialoguer::{theme::ColorfulTheme, Input};
 use rs_xdiff::{
     cli::{Action, Args, RunArgs},
-    get_body_text, get_header_text, get_status_text, highlight_text, LoadConfig, RequestConfig,
-    RequestProfile,
+    get_body_text, get_header_text, get_status_text, highlight_text, process_error_output,
+    LoadConfig, RequestConfig, RequestProfile,
 };
 
 use clap::Parser;
@@ -15,13 +15,12 @@ use clap::Parser;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    match args.action {
-        Action::Run(args) => run(args).await?,
-        Action::Parse => parse().await?,
+    let result = match args.action {
+        Action::Run(args) => run(args).await,
+        Action::Parse => parse().await,
         _ => panic!("Not implemented"),
-    }
-
-    Ok(())
+    };
+    process_error_output(result)
 }
 
 async fn run(args: RunArgs) -> anyhow::Result<()> {
@@ -42,14 +41,18 @@ async fn run(args: RunArgs) -> anyhow::Result<()> {
     let status = get_status_text(&res)?;
     let headers = get_header_text(&res, &[])?;
     let body = get_body_text(res, &[]).await?;
-    writeln!(&mut output, "Url: {}\n", url)?;
-    write!(&mut output, "{}", status)?;
-    write!(
-        &mut output,
-        "{}",
-        highlight_text(&headers, "yaml", Some("InspiredGitHub"))?
-    )?;
-    write!(&mut output, "{}", highlight_text(&body, "json", None)?)?;
+    if atty::is(atty::Stream::Stdout) {
+        writeln!(&mut output, "Url: {}\n", url)?;
+        write!(&mut output, "{}", status)?;
+        write!(
+            &mut output,
+            "{}",
+            highlight_text(&headers, "yaml", Some("InspiredGitHub"))?
+        )?;
+        write!(&mut output, "{}", highlight_text(&body, "json", None)?)?;
+    } else {
+        write!(&mut output, "{}", body)?;
+    }
 
     let stdout = std::io::stdout();
     let mut stdout = stdout.lock();

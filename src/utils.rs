@@ -1,4 +1,6 @@
-use std::fmt::{self, Write};
+use std::fmt;
+use std::fmt::Write as _;
+use std::io::Write as _;
 
 use syntect::easy::HighlightLines;
 use syntect::highlighting::ThemeSet;
@@ -73,4 +75,22 @@ pub fn highlight_text(text: &str, extension: &str, theme: Option<&str>) -> anyho
     }
 
     Ok(output)
+}
+
+pub fn process_error_output(result: anyhow::Result<()>) -> anyhow::Result<()> {
+    match result {
+        Ok(_) => {}
+        Err(e) => {
+            let stderr = std::io::stderr();
+            let mut stderr = stderr.lock();
+            if atty::is(atty::Stream::Stderr) {
+                let s = Style::new().red();
+                write!(stderr, "{}", s.apply_to(format!("{:?}", e)))?;
+            } else {
+                write!(stderr, "{:?}", e)?;
+            }
+        }
+    }
+
+    Ok(())
 }

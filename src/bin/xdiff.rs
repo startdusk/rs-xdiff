@@ -2,21 +2,20 @@ use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Input, MultiSelect};
 use rs_xdiff::{
     cli::{Action, Args, RunArgs},
-    highlight_text, DiffConfig, DiffProfile, ExtraArgs, LoadConfig, RequestProfile,
-    ResponseProfile,
+    highlight_text, process_error_output, DiffConfig, DiffProfile, ExtraArgs, LoadConfig,
+    RequestProfile, ResponseProfile,
 };
 use std::io::Write;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    match args.action {
-        Action::Run(args) => run(args).await?,
-        Action::Parse => parse().await?,
+    let result = match args.action {
+        Action::Run(args) => run(args).await,
+        Action::Parse => parse().await,
         _ => panic!("Not implemented"),
-    }
-
-    Ok(())
+    };
+    process_error_output(result)
 }
 
 async fn run(args: RunArgs) -> anyhow::Result<()> {
@@ -33,8 +32,11 @@ async fn run(args: RunArgs) -> anyhow::Result<()> {
     let output = profile.diff(extra_args).await?;
     let stdout = std::io::stdout();
     let mut stdout = stdout.lock();
-    write!(stdout, "{}", output)?;
-
+    if atty::is(atty::Stream::Stdout) {
+        write!(stdout, "---\n{}", highlight_text(&output, "yaml", None)?)?;
+    } else {
+        write!(stdout, "{}", output)?;
+    }
     Ok(())
 }
 
@@ -66,6 +68,10 @@ async fn parse() -> anyhow::Result<()> {
     let result = serde_yaml::to_string(&config)?;
     let stdout = std::io::stdout();
     let mut stdout = stdout.lock();
-    write!(stdout, "---\n{}", highlight_text(&result, "yaml", None)?)?;
+    if atty::is(atty::Stream::Stdout) {
+        write!(stdout, "---\n{}", highlight_text(&result, "yaml", None)?)?;
+    } else {
+        write!(stdout, "{}", result)?;
+    }
     Ok(())
 }
