@@ -1,5 +1,5 @@
 use anyhow::Result;
-use rs_xdiff::DiffConfig;
+use rs_xdiff::{DiffConfig, LoadConfig};
 
 // folder name must be examples
 // cargo run --example config

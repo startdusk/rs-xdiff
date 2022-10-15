@@ -2,7 +2,8 @@ use clap::Parser;
 use dialoguer::{theme::ColorfulTheme, Input, MultiSelect};
 use rs_xdiff::{
     cli::{Action, Args, RunArgs},
-    DiffConfig, DiffProfile, ExtraArgs, RequestProfile, ResponseProfile, highlight_text,
+    highlight_text, DiffConfig, DiffProfile, ExtraArgs, LoadConfig, RequestProfile,
+    ResponseProfile,
 };
 use std::io::Write;
 
@@ -65,6 +66,6 @@ async fn parse() -> anyhow::Result<()> {
     let result = serde_yaml::to_string(&config)?;
     let stdout = std::io::stdout();
     let mut stdout = stdout.lock();
-    write!(stdout, "---\n{}", highlight_text(&result, "yaml")?)?;
+    write!(stdout, "---\n{}", highlight_text(&result, "yaml", None)?)?;
     Ok(())
 }
