@@ -5,3 +5,8 @@ clean:
 .PNHOY: codeline
 codeline:
 	@tokei .
+
+.PNHOY: test
+test:
+	@cargo nextest run
+	

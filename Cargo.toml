@@ -30,3 +30,7 @@ syntect = "5.0"
 async-trait = "0.1.57"
 atty = "0.2.14"
 serde_qs = "0"
+
+[dev-dependencies]
+mockito = "0.31.0"
+trycmd = "0.14.0"
